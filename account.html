@@ -7059,6 +7059,7 @@ function run(){
     if(rec){
       const ca=cleanAcct(rec.acct); acctClean=ca.cleaned; bankCode=rec.bank; payeeName=rec.name;
       if(!bad&&ca.bad)bad='계좌 형식 이상(숫자 외 문자)';
+      if(!bad&&!String(payeeName).trim())bad='예금주명 공란';
     }
     const finalReason = reason||bad;
     if(finalReason){
