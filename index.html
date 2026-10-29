@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 보안: 이 페이지는 외부로 어떤 통신도 할 수 없음 -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<title>인사관리팀 검증 도구</title>
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--ink:#1f2937;--muted:#6b7280;--line:#e5e7eb;
+--brand:#4338ca;--brand-soft:#eef2ff;--brand-ink:#3730a3;
+--ok-bg:#ecfdf5;--ok:#047857;--warn-bg:#fffbeb;--warn:#b45309;--bad-bg:#fef2f2;--bad:#b91c1c;--excl-bg:#f3f4f6;--excl:#6b7280;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Malgun Gothic","맑은 고딕",sans-serif;font-size:14px;line-height:1.55}
+header.top{background:#fff;border-bottom:1px solid var(--line);padding:14px 22px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:20}
+header.top .logo{width:30px;height:30px;border-radius:8px;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}
+header.top h1{font-size:16px;margin:0;font-weight:700}.top .sub{color:var(--muted);font-size:12.5px}
+.wrap{max-width:1180px;margin:0 auto;padding:22px}.muted{color:var(--muted)}
+.btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 14px;font-size:13.5px;cursor:pointer;font-weight:600;color:var(--ink)}
+.btn:hover{background:#f9fafb}.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}.btn.primary:hover{background:var(--brand-ink)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--brand-ink)}.btn.sm{padding:4px 10px;font-size:12px}
+.hidden{display:none!important}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+.modcard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;cursor:pointer;transition:.15s;position:relative}
+.modcard:hover{border-color:var(--brand);box-shadow:0 4px 14px rgba(67,56,202,.08)}
+.modcard.soon{cursor:default;opacity:.6}.modcard.soon:hover{border-color:var(--line);box-shadow:none}
+.modcard .ic{width:38px;height:38px;border-radius:9px;background:var(--brand-soft);color:var(--brand-ink);display:flex;align-items:center;justify-content:center;font-size:19px;margin-bottom:12px}
+.modcard h3{margin:0 0 4px;font-size:15px}.modcard p{margin:0;color:var(--muted);font-size:12.5px}
+.modcard .tag{position:absolute;top:14px;right:14px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px}
+.tag.ready{background:var(--ok-bg);color:var(--ok)}.tag.soon{background:var(--excl-bg);color:var(--excl)}
+.crumb{display:flex;align-items:center;gap:8px;margin-bottom:16px;font-size:13px}.crumb a{color:var(--brand-ink);cursor:pointer;font-weight:600}
+.section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:16px}
+.section h2{font-size:14px;margin:0 0 4px;display:flex;align-items:center;gap:8px}
+.section .step{width:22px;height:22px;border-radius:50%;background:var(--brand);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.section .desc{color:var(--muted);font-size:12.5px;margin:0 0 14px}
+.drops{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:820px){.drops{grid-template-columns:1fr}.maps{grid-template-columns:1fr!important}}
+.drop{border:2px dashed var(--line);border-radius:12px;padding:18px 14px;text-align:center;background:#fcfcfd;transition:.15s;cursor:pointer;position:relative}
+.drop:hover{border-color:var(--brand);background:var(--brand-soft)}.drop.drag{border-color:var(--brand);background:var(--brand-soft)}
+.drop.has{border-style:solid;border-color:var(--ok);background:var(--ok-bg);cursor:default}
+.drop .dico{font-size:24px;margin-bottom:5px}.drop h4{margin:0 0 4px;font-size:13px}.drop .hint{font-size:11.5px;color:var(--muted)}
+.drop .okbox{display:none}.drop.has .dico,.drop.has .hint,.drop.has h4{display:none}.drop.has .okbox{display:block}
+.okbox .check{font-size:26px;color:var(--ok)}.okbox .fname{font-weight:700;font-size:12.5px;color:var(--ok);word-break:break-all;margin-top:2px}
+.okbox .meta{font-size:11.5px;color:var(--ok);margin-top:3px}
+.okbox .re{margin-top:9px;display:flex;gap:6px;justify-content:center;align-items:center;flex-wrap:wrap}
+.okbox .re input{width:42px;padding:3px 5px;border:1px solid var(--ok);border-radius:6px;text-align:center;font-size:12px}
+.drop input[type=file]{display:none}
+.maps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.mapcol h4{font-size:13px;margin:0 0 8px;color:var(--brand-ink)}
+.maprow{display:grid;grid-template-columns:118px 1fr;gap:7px;align-items:center;margin-bottom:6px}
+.maprow label{font-size:12px}.maprow label .req{color:var(--bad)}
+.maprow select{width:100%;padding:5px 7px;border:1px solid var(--line);border-radius:7px;font-size:12px;background:#fff}
+.maprow select.auto{border-color:var(--ok);background:var(--ok-bg)}.maprow select.miss{border-color:var(--bad);background:var(--bad-bg)}
+.settings{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-end}
+.fld label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600}
+.fld input,.fld select{padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:13.5px}
+.chips{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.chip{border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:90px;background:#fff}
+.chip .n{font-size:21px;font-weight:800;line-height:1}.chip .l{font-size:11.5px;color:var(--muted);margin-top:4px}
+.chip.ok{background:var(--ok-bg);border-color:#a7f3d0}.chip.ok .n{color:var(--ok)}
+.chip.bad{background:var(--bad-bg);border-color:#fecaca}.chip.bad .n{color:var(--bad)}
+.chip.warn{background:var(--warn-bg);border-color:#fde68a}.chip.warn .n{color:var(--warn)}
+.tablewrap{overflow:auto;border:1px solid var(--line);border-radius:10px;max-height:560px}
+table{border-collapse:collapse;width:100%;font-size:12.5px;white-space:nowrap}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left}
+th{background:#f9fafb;position:sticky;top:0;font-weight:700;z-index:1}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700}
+.b-ok{background:var(--ok-bg);color:var(--ok)}.b-miss{background:var(--bad-bg);color:var(--bad)}
+.b-over{background:#fef2f2;color:var(--bad)}.b-amt{background:var(--warn-bg);color:var(--warn)}
+.b-phone{background:var(--warn-bg);color:var(--warn)}.b-chk{background:var(--excl-bg);color:var(--excl)}
+tr.row-issue td{background:#fffdf7}
+.notice{background:var(--brand-soft);border:1px solid #c7d2fe;border-radius:10px;padding:12px 14px;font-size:12.5px;color:var(--brand-ink);margin-bottom:16px}
+.footer{color:var(--muted);font-size:11.5px;text-align:center;padding:24px 0}
+</style>
+</head>
+<body>
+<header class="top"><div class="logo">人</div><div><h1>인사관리팀 검증 도구</h1>
+<div class="sub">전표 치기 전, 규정대로 맞는지 확인하세요 · 모든 처리는 이 PC 안에서만 (외부 전송 없음)</div></div></header>
+
+<div class="wrap" id="hub">
+  <div class="notice">담당자 작업분을 시스템 규정과 대조해 <b>과지급·누락·금액오류</b>를 잡아냅니다. 업무는 계속 추가됩니다.</div>
+  <div class="grid">
+    <div class="modcard" onclick="location.href='birthday.html'"><span class="tag ready">사용가능</span><div class="ic">🎁</div><h3>생일자 상품권</h3><p>그룹입사일·음력·단축근무 규정대로 산정해 담당자 작업분과 대조</p></div>
+    <div class="modcard" onclick="location.href='hyujik.html'"><span class="tag ready">사용가능</span><div class="ic">🤰</div><h3>휴직자 급여검증</h3><p>출산·산전후·육아 휴직자의 무급/유급일수를 규정대로 산정해 담당자 '일수'와 대조</p></div>
+    <div class="modcard" onclick="location.href='account.html'"><span class="tag ready">사용가능</span><div class="ic">🏦</div><h3>주니어파트너 계좌이체</h3><p>사원명부 계좌 VLOOKUP → 신한 업로드 양식 생성(급여·퇴직정산·일용직, 암호엑셀 지원)</p></div>
+    <div class="modcard" onclick="window.open('https://shinsegaefood.github.io/HR/','_blank','noopener')"><span class="tag ready">새 창</span><div class="ic">📰</div><h3>인사이슈 보드</h3><p>인사 법령·판례·국회 의안·뉴스를 매일 아침 자동 수집 (공개 정보 전용, 별도 사이트)</p></div>
+    <div class="modcard" onclick="location.href='payroll.html'"><span class="tag ready">사용가능</span><div class="ic">💰</div><h3>급여 전월 비교</h3><p>전월·당월 급여대장을 담당·팀·파트별로 비교 · 밴드/연봉직 · J사번 · 엑셀/PPT 보고서</p></div>
+    <div class="modcard soon"><span class="tag soon">준비중</span><div class="ic">🏥</div><h3>의료비</h3><p>추가 예정</p></div>
+    <div class="modcard soon"><span class="tag soon">준비중</span><div class="ic">🎉</div><h3>경조사 지원</h3><p>추가 예정</p></div>
+  </div>
+  <section class="section" style="margin-top:22px" aria-labelledby="chlog-title">
+    <h2 id="chlog-title" style="font-size:14px;margin:0 0 6px">📝 업데이트 기록</h2>
+    <ul style="list-style:none;margin:0;padding:0"><li style="display:grid;grid-template-columns:86px 130px 1fr;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:12.5px"><span class="muted">2026.10.29</span><b>생일자 상품권</b><span>별도 화면(birthday.html)으로 분리 · 중복지급 표시 · 암호 걸린 엑셀 열기 · 결과 엑셀 서식(색·필터·틀 고정) · 음력 환산표 2040년까지 · 기준연도·지급월 이번 달 자동 · 사용법 · 외부 통신 차단</span></li><li style="display:grid;grid-template-columns:86px 130px 1fr;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:12.5px"><span class="muted">2026.10.29</span><b>휴직자 급여검증</b><span>일수 미기재자 표시(누락 확인) · 암호 걸린 엑셀 열기 · 결과 엑셀 서식 · 급여월 이번 달 자동 · 사용법 · 외부 통신 차단</span></li><li style="display:grid;grid-template-columns:86px 130px 1fr;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:12.5px"><span class="muted">2026.10.29</span><b>급여 전월 비교</b><span>항목 제외(학자금 등 빼고 비교) · 사용법 · PPT 보고서(요약 1장 + 담당별 상세) · 엑셀 종합검토 시트 · 조직 묶기·순서 끌어서 바꾸기 · 증감 요인·종합 순위·원본 열 상세 · &quot;밴드/연봉직&quot; 명칭 · 주민번호 즉시 삭제·외부 통신 차단</span></li><li style="display:grid;grid-template-columns:86px 130px 1fr;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:12.5px"><span class="muted">2026.10.29</span><b>인사이슈 보드</b><span>사용법 추가</span></li><li style="display:grid;grid-template-columns:86px 130px 1fr;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:12.5px"><span class="muted">2026.10.28</span><b>급여 전월 비교</b><span>새로 추가 — 전월·당월 급여대장을 담당·팀·파트별로 비교 (밴드/연봉직·J사번)</span></li></ul><details style="margin-top:4px"><summary style="cursor:pointer;font-size:12.5px;color:var(--brand-ink);font-weight:600;padding:6px 0">이전 기록 2건 더 보기</summary><ul style="list-style:none;margin:0;padding:0"><li style="display:grid;grid-template-columns:86px 130px 1fr;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:12.5px"><span class="muted">2026.10.28</span><b>인사이슈 보드</b><span>새로 추가 — 인사 법령·판례·의안·뉴스 매일 자동 수집 (별도 사이트, 허브에 링크)</span></li><li style="display:grid;grid-template-columns:86px 130px 1fr;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:12.5px"><span class="muted">2026.10.28</span><b>주니어파트너 계좌이체</b><span>예금주명이 빈 사람을 오류로 표시</span></li></ul></details>
+  </section>
+  <div class="footer">규정 로직은 인사관리팀이 관리합니다. 규정이 바뀌면 이 도구만 업데이트하면 됩니다.</div>
+</div>
+
+</body>
+</html>
