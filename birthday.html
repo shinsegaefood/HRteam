@@ -168,6 +168,7 @@ tr.row-issue td{background:#fffdf7}
 <footer class="ver" data-tool="생일자 상품권" style="max-width:1180px;margin:8px auto 28px;padding:0 22px;font-size:12px;color:#6b7280">
   <details><summary style="cursor:pointer">업데이트 기록 · 바뀐 점 보기</summary>
   <ul style="margin:6px 0 0;padding-left:18px;line-height:1.7">
+    <li data-date="2026.10.30"><span style="color:#6b7280">2026.10.30</span> — 휴직 확인 칸을 부서명으로 자동 연결 (정형검색·기안 모두)</li>
     <li data-date="2026.10.29"><span style="color:#6b7280">2026.10.29</span> — 별도 화면(birthday.html)으로 분리 · 중복지급 표시 · 암호 걸린 엑셀 열기 · 결과 엑셀 서식(색·필터·틀 고정) · 음력 환산표 2040년까지 · 기준연도·지급월 이번 달 자동 · 사용법 · 외부 통신 차단</li>
   </ul></details>
 </footer>
@@ -7021,7 +7022,7 @@ const SYS_FIELDS=[
   {key:'phone1',label:'핸드폰1',req:true,kw:['핸드폰번호1','휴대폰1','핸드폰1']},
   {key:'phone2',label:'핸드폰2',req:false,kw:['핸드폰번호2','휴대폰2','핸드폰2']},
   {key:'phone3',label:'핸드폰3',req:false,kw:['핸드폰번호3','휴대폰3','핸드폰3']},
-  {key:'leave',label:'휴직/상태(선택)',req:false,kw:['휴직','발령','재직','상태']},
+  {key:'leave',label:'휴직 확인(부서명)',req:false,kw:['부서명','휴직','발령','재직','상태']},
 ];
 const SHORT_FIELDS=[
   {key:'sabun',label:'사번',req:true,kw:['사번','사원번호','직원번호']},
@@ -7036,7 +7037,7 @@ const WORK_FIELDS=[
   {key:'phone1',label:'핸드폰1',req:false,kw:['핸드폰번호1','휴대폰1','핸드폰1']},
   {key:'phone2',label:'핸드폰2',req:false,kw:['핸드폰번호2','휴대폰2','핸드폰2']},
   {key:'phone3',label:'핸드폰3',req:false,kw:['핸드폰번호3','휴대폰3','핸드폰3']},
-  {key:'leave',label:'휴직/비고(선택)',req:false,kw:['비고','휴직','발령','상태']},
+  {key:'leave',label:'휴직 확인(부서명)',req:false,kw:['부서명','비고','휴직','발령','상태']},
 ];
 
 let SYS=null,SHORT=null,WORK=null,SYSMAP={},SHORTMAP={},WORKMAP={},RESULTS=[];
