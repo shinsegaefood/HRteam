@@ -7014,9 +7014,44 @@ const lastVal=c=>{const a=splitCell(c);return a.length?a[a.length-1]:null;}; // 
 const FAR=new Date(2100,0,1);
 
 function readWorkbook(ab,fname){
-  readXlsx(new Uint8Array(ab),fname,{type:'array'},(wb,fname)=>readParsed(wb,fname));
+  readXlsx(new Uint8Array(ab),fname,{type:'array'},(wb,fname,u8)=>readParsed(wb,fname,u8));
 }
-function readParsed(wb,fname){
+// ───────── 취소선: 휴복퇴직현황은 예전 계획을 지우지 않고 취소선으로 남겨 둠 ─────────
+//  · 줄 대부분에 취소선 → 그 줄(예전 계획)은 계산에서 뺌
+//  · 칸 전체 취소선 → 그 날짜는 없는 것으로 봄
+//  · 칸 안 일부 줄만 취소선 → 취소선 없는 글자만 씀
+async function readStrike(u8,name){
+  const wb=new ExcelJS.Workbook();
+  await wb.xlsx.load(u8.buffer.slice(u8.byteOffset,u8.byteOffset+u8.byteLength));
+  const ws=wb.getWorksheet(name); const cells=new Map(), rows=new Set(); if(!ws)return {cells,rows};
+  ws.eachRow({includeEmpty:false},(row,rn)=>{
+    let filled=0,struck=0;
+    row.eachCell({includeEmpty:false},cell=>{
+      const v=cell.value; if(v==null||v==='')return; filled++;
+      if(v&&typeof v==='object'&&Array.isArray(v.richText)){
+        const runs=v.richText, base=!!(cell.font&&cell.font.strike);
+        const kept=runs.filter(t=>!((t.font&&t.font.strike!=null)?t.font.strike:base));
+        if(kept.length===runs.length)return;
+        const txt=kept.map(t=>t.text).join('');
+        if(!txt.replace(/[\s\-]/g,'')){struck++;cells.set(cell.address,'');}
+        else cells.set(cell.address,txt.replace(/^\s*\n+|\n+\s*$/g,''));
+      } else if(cell.font&&cell.font.strike){struck++;cells.set(cell.address,'');}
+    });
+    if(struck>=2&&struck*2>=filled)rows.add(rn);
+  });
+  return {cells,rows};
+}
+function applyStrike(R0,ws,info){
+  const ref=ws['!ref']?XLSX.utils.decode_range(ws['!ref']):{s:{r:0,c:0}};
+  const skip=new Set(); let cellN=0;
+  info.rows.forEach(rn=>{const i=rn-1-ref.s.r; if(i>R0.hRow)skip.add(i);});
+  info.cells.forEach((t,a)=>{const x=XLSX.utils.decode_cell(a), i=x.r-ref.s.r, j=x.c-ref.s.c;
+    if(i<=R0.hRow||!R0.arr[i]||skip.has(i))return;
+    if(j===R0.cmap.sabun||j===R0.cmap.name)return;                 // 사번·성명은 사람 연결에 필요하므로 그대로
+    R0.arr[i][j]=t; cellN++;});
+  R0.skip=skip; R0.strike={rows:skip.size,cells:cellN};
+}
+function readParsed(wb,fname,u8){
   let shName=wb.SheetNames.find(n=>n.includes('출산'))||wb.SheetNames[0];
   const ws=wb.Sheets[shName];
   const arr=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true});
@@ -7025,15 +7060,22 @@ function readParsed(wb,fname){
   if(hRow<0)hRow=1;
   const cmap={};
   arr[hRow].forEach((h,i)=>{const k=classify(h); if(k&&!(k in cmap))cmap[k]=i;});
-  RAW={arr,hRow,cmap,shName,fname};
+  const R0=RAW={arr,hRow,cmap,shName,fname};
   document.getElementById('fname').textContent=fname;
-  document.getElementById('meta').textContent=`'${shName}' · ${arr.length-hRow-1}행 · 헤더 ${hRow+1}행`;
+  const meta=t=>{ if(RAW===R0) document.getElementById('meta').textContent=`'${shName}' · ${arr.length-hRow-1}행 · 헤더 ${hRow+1}행`+(t?' · '+t:''); };
+  if(u8&&u8[0]===0x50&&u8[1]===0x4B&&typeof ExcelJS!=='undefined'){
+    meta('취소선 확인 중…');
+    R0.strikeP=readStrike(u8,shName).then(info=>{applyStrike(R0,ws,info); meta(`취소선 줄 ${R0.strike.rows}개 · 취소선 칸 ${R0.strike.cells}개는 계산에서 뺌`);})
+      .catch(e=>{R0.strikeErr=e.message||String(e); meta('취소선을 읽지 못했어요 — 두 줄 칸은 아래 줄 기준');})
+      .then(()=>{R0.strikeDone=true;});
+  } else meta(u8&&!(u8[0]===0x50&&u8[1]===0x4B)?'xls 형식이라 취소선은 확인하지 못해요':'');
   document.getElementById('drop').classList.add('has');
   document.getElementById('sec-run').classList.remove('hidden');
 }
 
 function run(){
   if(!RAW){alert('파일을 먼저 올려주세요.');return;}
+  if(RAW.strikeP&&!RAW.strikeDone){RAW.strikeP.then(()=>run());return;}   // 취소선을 다 읽은 뒤 계산
   const y=parseInt(document.getElementById('opt-year').value,10)||2026;
   const m=parseInt(document.getElementById('opt-month').value,10);
   const first=new Date(y,m-1,1), last=new Date(y,m,0), mdays=last.getDate();
@@ -7055,6 +7097,7 @@ function run(){
       .some(k=>splitCell(get(r,k)).length>0);
     if(sabun)lastSabun=sabun; else sabun=lastSabun;
     if(name)lastName=name; else name=lastName;
+    if(RAW.skip&&RAW.skip.has(r)) continue;                         // 취소선 줄(예전 계획)
     if(!hasDate && paidRaw==='') continue;
     const isY=status.includes('유사산')||status.includes('유산')||status.includes('사산');
 
@@ -7127,7 +7170,7 @@ function run(){
   document.getElementById('assume').innerHTML=(PREPAY?
     `※ <b>선지급 보수처리 ON (기준일 ${CUTOFF}일)</b> — 기준일까지는 규칙대로, 이후는 무급으로 가정한 <b>'이달유급(정답)'</b>과 담당자 기안을 비교합니다. '최종유급'은 한 달 전체 규칙값, '다음달정산'은 다음 달 추가로 줄 유급일수(최종−보수)입니다. 기안=이달유급→<span style="color:#2563eb;font-weight:700">선지급 보수(정상)</span>, 기안=최종유급→일치, 그 외→불일치.`:
     `※ <b>무급=출산휴직·산휴무급구간·육아·희망육아·육아6개월·기타휴직(명시된 구간만)</b> / 유급=산휴유급·단축·유사산·정상근무·휴직단계 사이 공백.`)
-    +` 이번 달 휴직 구간이 있는데 <b>'일수'를 안 적은 사람은 '일수 미기재'</b>로 표시해요. 셀 두 줄이면 아래 줄(최종 보정값) 사용. 날짜는 엑셀 원본값에서 직접 변환(시간대 영향 없음).`;
+    +` 이번 달 휴직 구간이 있는데 <b>'일수'를 안 적은 사람은 '일수 미기재'</b>로 표시해요. 셀 두 줄이면 아래 줄(최종 보정값) 사용. 취소선 줄(예전 계획)·취소선 날짜는 계산에서 뺌. 날짜는 엑셀 원본값에서 직접 변환(시간대 영향 없음).`;
   document.getElementById('sec-result').scrollIntoView({behavior:'smooth'});
 }
 
@@ -7194,8 +7237,8 @@ _el('pw-ok').addEventListener('click',pwOk); _el('pw-cancel').addEventListener('
 _el('pw-input').addEventListener('keydown',e=>{ if(e.key==='Enter')pwOk(); if(e.key==='Escape')closePw(); });
 // 엑셀 읽기: 암호가 걸려 있으면 비밀번호 창 → 풀어서 다시 읽기
 function readXlsx(u8,fname,opts,onWb){
-  try{ onWb(XLSX.read(u8,opts),fname); }
-  catch(e){ if(/password|encrypt/i.test(e.message||'')) askPassword(fname,u8,dec=>{ try{ onWb(XLSX.read(dec,opts),fname+' 🔓'); }catch(err){ alert('파일을 읽을 수 없어요: '+err.message); } });
+  try{ onWb(XLSX.read(u8,opts),fname,u8); }
+  catch(e){ if(/password|encrypt/i.test(e.message||'')) askPassword(fname,u8,dec=>{ try{ onWb(XLSX.read(dec,opts),fname+' 🔓',dec); }catch(err){ alert('파일을 읽을 수 없어요: '+err.message); } });
     else alert('파일을 읽을 수 없어요: '+(e.message||e)); }
 }
 
