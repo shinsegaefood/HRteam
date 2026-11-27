@@ -186,6 +186,21 @@ tr.issue td{background:#fffdf5}
 .bsel-td{background:#fff7ed!important}
 .bsel{font-size:13px;padding:3px 6px;border-radius:6px;border:1px solid #d1d5db}
 .bsel.todo{border:2px solid #f59e0b;background:#fef3c7;font-weight:700;color:#92400e}
+#print-list{display:none}
+@media print{
+  @page{size:A4 landscape;margin:10mm}
+  body.printing>*:not(#print-list){display:none!important}
+  html,body.printing{background:#fff!important}body.printing{margin:0;padding:0}
+  body.printing #print-list{display:block;font-family:'맑은 고딕','Malgun Gothic',sans-serif;color:#000}
+  #print-list .pl-title{background:#d9d9d9;border:1px solid #808080;border-bottom:none;font-size:15pt;font-weight:700;padding:8px 10px}
+  #print-list table{width:100%;border-collapse:collapse;font-size:8.5pt}
+  #print-list th{text-align:center;color:#000;position:static;background:#bfbfbf!important;border:1px solid #808080;padding:4px 3px;font-weight:700;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #print-list td{border:1px solid #a6a6a6;padding:3px 4px;text-align:center;white-space:nowrap}
+  #print-list td.l{text-align:left}#print-list td.r{text-align:right}
+  #print-list thead{display:table-header-group}#print-list tr{page-break-inside:avoid}
+  #print-list tfoot td{background:#f2f2f2;font-weight:700;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #print-list .pl-title{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
 @keyframes bpulse{0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,.0)}50%{box-shadow:0 0 0 6px rgba(245,158,11,.25)}}
 </style>
 </head>
@@ -234,7 +249,7 @@ tr.issue td{background:#fffdf5}
   <section class="card hidden" id="result">
     <h2><span class="n">3</span>결과</h2>
     <div class="chips" id="chips"></div>
-    <div class="row"><button class="btn primary" id="dl">엑셀 내려받기</button><button class="btn hidden" id="dl-phone">핸드폰번호 업로드 파일 (SSGPAY)</button><span class="muted">요약 · 계산근거 · 기안지 · 전표_업로딩 · 확인 필요 시트가 한 파일에 들어 있어요</span></div>
+    <div class="row"><button class="btn primary" id="dl">엑셀 내려받기</button><button class="btn hidden" id="dl-phone">핸드폰번호 업로드 파일 (SSGPAY)</button><button class="btn hidden" id="dl-pdf">지급 명단 PDF</button><span class="muted">요약 · 계산근거 · 기안지 · 전표_업로딩 · 확인 필요 시트가 한 파일에 들어 있어요</span></div>
     <div id="outs"></div>
   </section>
 
@@ -243,7 +258,7 @@ tr.issue td{background:#fffdf5}
     <ol class="how">
       <li><b>생일자 대상</b>: 정형검색의 생년월일·음양구분으로 기준 월에 생일이 있는 사람. 음력은 환산표(2024~2040)로 양력 날짜를 구해요.</li>
       <li><b>금액</b>: 근속(그룹입사일~기준연도 1월 1일 + 경력인정개월)이 120개월 이상이면 10년이상. 생일 당일 유효한 단축근무 시간(40·35·30·25·20)에 따라 금액이 정해져요. 임신기 단축은 40시간으로 봐요. 직급(직급명)이 <b>Y59</b>인 4시간 근로자는 20시간 금액으로 비례 지급하고, <b>사외이사</b>는 대상에서 빼요.</li>
-      <li><b>기안지·전표·SSGPAY</b>: '지급'인 사람만 들어가요. 기안지 담당별 표는 정형검색 원소속부서전체명 안의 '○○담당'으로 나누고(담당이 없으면 대표직속), 전표 코스트센터는 회계부서 코드(숫자로 시작하면 앞에 1, 예: 65155 → 165155)예요. 적요는 고른 기준 월로 들어가요. 결과 엑셀의 <b>첫 번째 시트가 전표_업로딩</b>이라 그대로 SAP에 올리면 돼요. 핸드폰번호 업로드 파일은 따로 내려받고, '검증' 시트에 번호·금액·사번·성명과 합계가 있어요.</li>
+      <li><b>기안지·전표·SSGPAY</b>: '지급'인 사람만 들어가요. 기안지 담당별 표는 정형검색 원소속부서전체명 안의 '○○담당'으로 나누고(담당이 없으면 대표직속), 전표 코스트센터는 회계부서 코드(숫자로 시작하면 앞에 1, 예: 65155 → 165155)예요. 적요는 고른 기준 월로 들어가요. 결과 엑셀의 <b>첫 번째 시트가 전표_업로딩</b>이라 그대로 SAP에 올리면 돼요. <b>[지급 명단 PDF]</b>를 누르면 지급 대상자만 담당 순으로 정리된 명단의 인쇄 창이 열려요 — 대상을 'PDF로 저장'으로 고르면 PDF로 받아져요. 핸드폰번호 업로드 파일은 따로 내려받고, '검증' 시트에 번호·금액·사번·성명과 합계가 있어요.</li>
       <li><b>전표 점검</b>: '전표 점검' 시트(화면에도 표시)에 코스트센터별 건수·금액 소계, 형식 점검(알파벳+4자리 또는 1+5자리), 기안=전표=SSGPAY 금액 대조가 있어요. 지난달 기안 파일(전표_업로딩 시트)이나 지난달 결과 엑셀을 같이 넣으면 지난달에 없던 코스트센터를 표시해요. SAP 업로드·전기 후 코스트센터별 합계를 이 소계와 비교하세요.</li>
       <li><b>확인 필요 정리</b>: 결과 화면의 생일자 표에서 '확인 필요'인 사람을 <b>지급/제외</b>로 고르면(금액이 비어 있으면 금액도 입력) 기안지·전표·핸드폰 파일이 그 명단으로 다시 만들어져요. 기안지 표는 '생일자 요약' 시트를 수식으로 따라가서 엑셀에서 지급 여부를 고쳐도 숫자가 바뀌고, 그때 전표와 달라지면 기안지 옆 점검 칸에 '전표와 다름'이 떠요.</li>
       <li><b>휴가·휴직</b>: 휴복퇴직현황을 같이 올리면 본인 생일 당일 기준으로, 산휴시작일~산휴종료일(산전후휴가·유사산휴가) 안이면 <b>지급</b>, 육아휴직·희망육아휴직 등 '휴직' 구간이면 <b>제외(미지급)</b>로 자동 판단해요. 부서명은 휴직인데 휴복퇴직현황에 생일 당일 구간이 없으면 '확인 필요'로 남겨요. 휴복퇴직현황이 없으면 휴직 표시자는 모두 '확인 필요'예요.</li>
@@ -7115,6 +7130,7 @@ const HR = (function () {
       { key: 'emp', label: '재직구분', req: false, kw: ['재직구분', '재직여부'] },
       { key: 'org', label: '담당(원소속부서전체명)', req: false, kw: ['원소속부서전체명', '부서전체명', '전체부서명'] },
       { key: 'cost', label: '코스트센터(회계부서)', req: false, kw: ['회계부서', '코스트센터'] },
+      { key: 'orgName', label: '원소속부서명', req: false, kw: ['원소속부서명'] },
       { key: 'jik', label: '직급', req: false, kw: ['직급'] },
       { key: 'jikName', label: '직급명', req: false, kw: ['직급명'] }
     ],
@@ -7681,7 +7697,7 @@ const HR = (function () {
       const r = { sabun, name, lunar: lunar ? '음' : '양', birthDisp: bd.disp, bdayDisp: `${hit.m}/${hit.d}`, hire: hire ? `${hire.y}-${p2(hire.m)}-${p2(hire.d)}` : '', career, tenure, grade,
         shortTxt: sh.txt, hours: sh.hours, amount, phone1: nS(g(o, 'phone1')), phone2: nS(g(o, 'phone2')), phone3: nS(g(o, 'phone3')),
         phone: [g(o, 'phone1'), g(o, 'phone2'), g(o, 'phone3')].map(nS).filter(x => x).join('-'), leaveTxt,
-        dam: findDam(g(o, 'org')), cost: costCenter(g(o, 'cost')),
+        dam: findDam(g(o, 'org')), cost: costCenter(g(o, 'cost')), orgName: nS(g(o, 'orgName')), jikName: nS(g(o, 'jikName')) || nS(g(o, 'jik')),
         pay: excl ? '제외' : hold ? '확인 필요' : '지급', cls: excl ? 'chk' : hold ? 'warn' : 'ok', why: why.join(' / '),
         leaveDay: BL.state === 'leave' ? `${BL.txt} (휴직 → 제외)` : BL.state === 'vac' ? `${BL.txt} (휴가 → 지급)` : BL.state === 'chk' ? `${BL.txt} (확인)` : '' };
       if (excl) r.why = [`생일 당일 ${BL.txt} 중 → 휴직은 미지급`].concat(why).join(' / ');
@@ -8326,7 +8342,7 @@ ${diag()}`
     h += `<h3>확인 필요 <span class="muted">${checks.length}건</span></h3>` + table([['구분', 'kind'], ['사번', 'sabun'], ['성명', 'name'], ['내용', 'msg', 'wrap']], checks.map(c => ({ ...c, cls: 'warn' })));
     const nChk = B ? B.targets.filter(t => t.pay === '확인 필요').length : 0;
     if (B) h = `<div class="alert ${nChk ? 'warn' : ''}">기안지·${String(opt.year).slice(2)}.${String(opt.month).padStart(2, '0')} 전표_업로딩 시트가 결과 엑셀에 들어 있고, 핸드폰번호 업로드 파일은 따로 내려받아요 (둘 다 '지급' ${B.targets.filter(t => t.pay === '지급').length}명만).` + (nChk ? ` <b>'확인 필요' ${nChk}명이 남아 있어 이 사람들은 빠져 있어요.</b>` : '') + `</div>` + h;
-    $('dl-phone').classList.toggle('hidden', !B);
+    $('dl-phone').classList.toggle('hidden', !B); $('dl-pdf').classList.toggle('hidden', !B);
     if (RES.jpc) { const J = RES.jpc, same = J.gian === J.jeon && J.jeon === J.ssg;
       h += `<h3>전표 업로드 전 점검 <span class="muted">기안 ${won(J.gian)}원 = 전표 ${won(J.jeon)}원 = SSGPAY ${won(J.ssg)}원 → ${same ? '일치' : '다름'} · ${J.n}줄 · 코스트센터 ${J.groups.length}개${RES.jpPrev ? '' : ' · 지난달 전표를 같이 올리면 처음 보는 코스트센터도 표시해요'}</span></h3>` +
         table([['코스트센터', 'cost'], ['담당', 'dams', 'wrap'], ['건수', 'n', 'num'], ['금액', 'amount', 'num'], ['형식', 'fmt', 'badge'], ['지난달 전표에', 'prevTxt'], ['확인할 내용', 'why', 'wrap']], J.groups); }
@@ -8355,6 +8371,25 @@ ${diag()}`
   }
   const save = (buf, name) => { const url = URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
     const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 3000); };
+  // 생일자 지급 명단 PDF: 인쇄 화면을 열어 'PDF로 저장' (외부 통신·글꼴 내장 없이 이 PC 안에서)
+  const DAM_ORDER = ['B2B영업1담당', 'B2B영업2담당', 'FC담당', 'FE/물류담당', 'R&D담당', '매입담당', '베이커리담당', '인사담당', '지원담당', '대표직속'];
+  $('dl-pdf').addEventListener('click', () => {
+    if (!RES || !RES.bday || !bdayWarnOk()) return; const o = RES.opt;
+    const di = d => { const i = DAM_ORDER.indexOf(d); return i < 0 ? 99 : i; };
+    const pay = RES.bday.targets.filter(t => t.pay === '지급').slice().sort((a, b) => di(a.dam || '대표직속') - di(b.dam || '대표직속') || String(a.orgName || '').localeCompare(String(b.orgName || '')) || String(a.name).localeCompare(String(b.name)));
+    const md = t => { const [m, d] = t.bdayDisp.split('/'); return `${String(m).padStart(2, '0')}/${String(d).padStart(2, '0')}`; };
+    const note = t => [t.hours && t.hours !== 40 ? (/Y59/.test(t.shortTxt) ? 'Y59 (20시간)' : `단축 ${t.hours}시간`) : '', /휴가/.test(t.leaveDay || '') ? '산전후휴가' : '', /화면에서/.test(t.why || '') ? '확인 후 지급' : ''].filter(Boolean).join(' · ');
+    const total = pay.reduce((a, t) => a + (t.amount || 0), 0);
+    const rows = pay.map((t, i) => `<tr><td>${i + 1}</td><td>${esc(t.dam || '대표직속')}</td><td class="l">${esc(t.orgName || '')}</td><td>${esc(t.sabun)}</td><td>${esc(t.name)}</td><td>${esc(t.jikName || '')}</td><td>${md(t)}</td><td>${t.lunar === '음' ? '음력' : '양력'}</td><td>${esc(t.grade)}</td><td class="r">${won(t.amount)}</td><td>${esc(t.phone)}</td><td class="l">${esc(note(t))}</td></tr>`).join('');
+    let box = $('print-list'); if (!box) { box = document.createElement('div'); box.id = 'print-list'; document.body.appendChild(box); }
+    box.innerHTML = `<div class="pl-title">□ ${o.year}년 ${o.month}월 생일자 상품권 지급 명단</div>
+      <table><thead><tr>${['NO', '담당', '원소속부서명', '사번', '성명', '직급', '생일', '음양구분', '근속구분', '지급액', '핸드폰번호', '비고'].map(h => `<th>${h}</th>`).join('')}</tr></thead>
+      <tbody>${rows}</tbody><tfoot><tr><td colspan="9">합계 ${pay.length}명</td><td class="r">${won(total)}</td><td colspan="2"></td></tr></tfoot></table>`;
+    const t0 = document.title; document.title = `${String(o.year).slice(2)}.${String(o.month).padStart(2, '0')} 생일자 상품권 지급 명단`;   // PDF 파일 이름 기본값
+    document.body.classList.add('printing');
+    const done = () => { document.body.classList.remove('printing'); document.title = t0; window.removeEventListener('afterprint', done); };
+    window.addEventListener('afterprint', done); window.print(); setTimeout(done, 1500);
+  });
   $('dl-phone').addEventListener('click', async () => { if (!RES || !RES.bday || !bdayWarnOk()) return; const o = RES.opt;
     const out = await HR.buildPhoneExcel(RES); save(out.buf, `${String(o.year).slice(2)}.${String(o.month).padStart(2, '0')} SSGPAY 업로드.xlsx`); });
   $('dl').addEventListener('click', () => { if (!BUF) return; if (!bdayWarnOk()) return; const o = RES.opt, what = [RES.bday ? '생일자' : '', RES.leave ? '휴직자' : ''].filter(Boolean).join('_');
@@ -8411,7 +8446,7 @@ ${diag()}`
           <tr class="ap" style="--d:1.4s"><td>100002</td><td>병가 · 복직</td><td class="n">23</td><td class="n">7</td><td class="n">0</td><td class="n">0</td><td class="n">0</td><td class="n">30</td></tr>
           <tr class="ap" style="--d:1.6s"><td>100003</td><td>육아휴직 · 조기복직</td><td class="n">1</td><td class="n">0</td><td class="n">0</td><td class="n">0</td><td class="n">29</td><td class="n">30</td></tr>
         </tbody></table>
-        <div style="margin-top:12px"><span class="mbtn p t-dl pr" style="--d:3.2s">엑셀 내려받기</span> <span class="mbtn ap" style="--d:1.6s">핸드폰번호 업로드 파일 (SSGPAY)</span></div>
+        <div style="margin-top:12px"><span class="mbtn p t-dl pr" style="--d:3.2s">엑셀 내려받기</span> <span class="mbtn ap" style="--d:1.6s">핸드폰번호 업로드 파일 (SSGPAY)</span> <span class="mbtn ap" style="--d:1.8s">지급 명단 PDF</span></div>
         <div class="fl2 ap" style="--d:3.5s;position:absolute;left:150px;top:228px"><span class="fico"><i></i>인사자동화_생일자_휴직자_2026_11월.xlsx</span></div>
       </div></div>
       <!-- 4 엑셀 검토 -->
@@ -8458,7 +8493,7 @@ ${diag()}`
       path: [['.fl', 300], ['.mdrop', 1500]] },
     { dur: 5000, cap: '<b>② 기준 월만 고르고 [둘 다 만들기]를 눌러요.</b> 병가·상병휴직 1차·2차는 유급으로 일수를 따로 세고, 가족돌봄·난임·산재 같은 기타휴직은 무급으로 계산해요.',
       path: [['.t-month', 1300, 1], ['.t-both', 3200, 1]] },
-    { dur: 5200, cap: '<b>③ 결과를 훑어보고 엑셀을 내려받아요.</b> 휴직자는 일반·병가·1차·2차·무급·합계로 나뉘어 나와요. 빨간 숫자(확인 필요)는 도구가 판단을 미룬 것이니 꼭 봐야 해요. 생일자는 결과 엑셀에 <b>기안지·전표_업로딩</b> 시트가 같이 들어 있고, <b>SSGPAY 핸드폰번호 업로드 파일</b>은 옆 버튼으로 따로 받아요 (둘 다 \'지급\'만).',
+    { dur: 5200, cap: '<b>③ 결과를 훑어보고 엑셀을 내려받아요.</b> 휴직자는 일반·병가·1차·2차·무급·합계로 나뉘어 나와요. 빨간 숫자(확인 필요)는 도구가 판단을 미룬 것이니 꼭 봐야 해요. 생일자는 결과 엑셀에 <b>기안지·전표_업로딩</b> 시트가 같이 들어 있고, <b>SSGPAY 핸드폰번호 업로드 파일</b>과 <b>지급 명단 PDF</b>는 옆 버튼으로 따로 받아요 (둘 다 \'지급\'만).',
       path: [['.mchip.r', 1000], ['.t-dl', 3100, 1]] },
     { dur: 6600, cap: '<b>④ 엑셀에서는 세 시트만 보면 돼요.</b> ① 확인 필요 → ② 전월 대비 변동(바뀐 사람만) → ③ 검산 표본. 노란 칸의 <b>확인</b>을 드롭다운에서 고르고 확인자·확인일을 적으면 표 바로 위에 진행 현황이 집계돼요. 휴직자 전체를 다시 계산할 필요는 없어요.',
       path: [['.xtab.hl1', 1000], ['.xtab.hl2', 2200], ['.xtab.hl3', 3400], ['.t-ok1', 4300, 1]] },
