@@ -178,6 +178,8 @@ tr.issue td{background:#fffdf5}
 .sign .h{background:var(--brand-soft);font-weight:700}.sign .y{background:#fff9db}
 .sign .l{border:0;text-align:right;color:var(--sub)}
 
+.bwarn-wrap{margin:10px 0 18px;padding:0 0 4px;border:2px solid #f59e0b;border-radius:12px;background:#fffbeb;overflow:hidden}.bwarn-wrap .bwarn{border:none;margin:0;border-radius:0}.bwarn-wrap .twrap{margin:0 10px 8px;background:#fff}
+.chip.jump{cursor:pointer}.chip.jump:hover{outline:2px solid #f59e0b}
 .bwarn{display:flex;align-items:center;gap:16px;margin:10px 0 12px;padding:14px 18px;border:2px solid #f59e0b;background:#fffbeb;border-radius:12px;animation:bpulse 2s ease-in-out 3}
 .bwarn-n{font-size:20px;color:#b45309;white-space:nowrap}.bwarn-n b{font-size:24px}
 .bwarn-t{flex:1;font-size:14px;color:#78350f;line-height:1.5}.bwarn-t span{color:#92400e;font-size:12.5px}
@@ -8307,6 +8309,7 @@ ${diag()}`
     return `<div class="twrap"><table><thead><tr>${cols.map(c => `<th>${c[0]}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr class="${r.cls && r.cls !== 'ok' ? 'issue' : ''}">${cols.map(c => {
       const v = r[c[1]];
       if (c[2] === 'paysel') {      // '확인 필요'였던 생일자는 화면에서 지급/제외를 정함
+        if (r.__nosel) return '<td></td>';
         if (r.orig !== '확인 필요') return `<td><span class="badge ${r.cls}">${esc(v)}</span></td>`;
         const amt = r.origAmount == null ? ` <input type="number" class="bamt" data-bamt="${esc(r.sabun)}" placeholder="금액" value="${r.amount == null ? '' : r.amount}" style="width:86px">` : '';
         return `<td style="white-space:nowrap" class="${r.pay === '확인 필요' ? 'bsel-td' : ''}"><select class="bsel ${r.pay === '확인 필요' ? 'todo' : ''}" data-bpay="${esc(r.sabun)}">${['확인 필요', '지급', '제외'].map(o => `<option ${o === r.pay ? 'selected' : ''}>${o}</option>`).join('')}</select>${amt}</td>`; }
@@ -8321,11 +8324,12 @@ ${diag()}`
     if (RES.diff) chips.push([RES.diff.changes.length, '전월 대비 변동', 'warn']);
     if (RES.sample) chips.push([RES.sample.leave.length + RES.sample.bday.length, '검산 표본', '']);
     chips.push([checks.length, '확인 필요', checks.length ? 'bad' : 'ok']);
-    $('chips').innerHTML = chips.map(([n, l, c]) => `<div class="chip ${c}"><div class="n">${n}</div><div class="l">${l}</div></div>`).join('');
+    $('chips').innerHTML = chips.map(([n, l, c]) => `<div class="chip ${c}${l === '확인 필요' ? ' jump' : ''}" ${l === '확인 필요' ? 'data-jump="1" title="눌러서 확인 필요로 이동"' : ''}><div class="n">${n}</div><div class="l">${l}${l === '확인 필요' ? ' ↓' : ''}</div></div>`).join('');
     let h = '';
     const nBulk = B ? B.targets.filter(t => t.pay === '확인 필요' && t.orig === '확인 필요' && t.origAmount != null).length : 0;
     if (B) h += `<h3>생일자 상품권 · ${opt.year}년 ${opt.month}월 <span class="muted">지급 여부 확인용 · '확인 필요'는 지급 여부 칸에서 지급/제외를 고르면 기안지·전표·핸드폰 파일에 바로 반영돼요</span></h3>` + (() => { const left = B.targets.filter(t => t.pay === '확인 필요'), noAmt = left.filter(t => t.origAmount == null).length;
-      return left.length ? `<div class="bwarn"><div class="bwarn-n">⚠ 확인 필요 <b>${left.length}명</b></div><div class="bwarn-t">아래 표의 <b>주황색 칸</b>에서 지급 여부를 <b>[지급] / [제외]</b>로 골라 주세요.${noAmt ? ` 금액이 비어 있는 ${noAmt}명은 금액도 넣어야 해요.` : ''}<br><span>정하지 않으면 기안지·전표·핸드폰 파일에서 빠져요.</span></div>${nBulk ? `<button class="btn primary" id="bulk-pay">확인 필요 ${nBulk}명 모두 지급으로</button>` : ''}</div>`
+      return left.length ? `<div class="bwarn-wrap" id="bwarn"><div class="bwarn"><div class="bwarn-n">⚠ 확인 필요 <b>${left.length}명</b></div><div class="bwarn-t">바로 아래 목록에서 <b>[지급] / [제외]</b>를 골라 주세요.${noAmt ? ` 금액이 비어 있는 ${noAmt}명은 금액도 넣어야 해요.` : ''}<br><span>정하지 않으면 기안지·전표·핸드폰 파일에서 빠져요. 고르면 이 목록에서 빠지고 전체 표에 반영돼요.</span></div>${nBulk ? `<button class="btn primary" id="bulk-pay">확인 필요 ${nBulk}명 모두 지급으로</button>` : ''}</div>` +
+        table([['사번', 'sabun'], ['성명', 'name'], ['생일', 'bdayDisp'], ['년차', 'grade'], ['시간', 'hours', 'num'], ['금액', 'amount', 'num'], ['지급 여부', 'pay', 'paysel'], ['확인할 내용', 'why', 'wrap']], left) + `</div>`
         : `<div class="bok">✓ 확인 필요 없음 — 기안지·전표·핸드폰 파일에 지급 ${B.targets.filter(t => t.pay === '지급').length}명이 모두 들어가요</div>`; })() + table([['사번', 'sabun'], ['성명', 'name'], ['생일', 'bdayDisp'], ['년차', 'grade'], ['시간', 'hours', 'num'], ['금액', 'amount', 'num'], ['핸드폰', 'phone']].concat(B.withLeave ? [['생일 당일 휴가·휴직', 'leaveDay', 'wrap']] : []).concat([['지급 여부', 'pay', 'paysel'], ['확인할 내용', 'why', 'wrap']]), B.targets);
     if (L) h += `<h3>휴직자 급여 · ${opt.year}년 ${opt.month}월 (${L.mdays}일)${opt.prepay ? ` <span class="muted">선지급 보수처리 · 기준일 ${L.cutoff}일</span>` : ''}</h3>` +
       table([['사번', 'sabun'], ['성명', 'name'], ['구분', 'sheetType'], ['상태', 'status', 'wrap'], ['일반', 'gen', 'num'], ['병가', 'sick', 'num'], ['1차', 's1', 'num'], ['2차', 's2', 'num'], ['무급', 'unpaidCnt', 'num'], ['합계', 'total', 'num'], ['유급일수', 'paid', 'num'], ...(opt.prepay ? [['다음달정산', 'trueup', 'num']] : []), ['무급 내역', 'detail', 'wrap'], ['이 달에 걸친 기간', 'periods', 'pre'], ['메모', 'note', 'wrap'], ...(L.hasPaidCol ? [['관리표 일수', 'entered', 'num'], ['관리표와 비교', 'cmp', 'badge']] : [])], L.results);
@@ -8339,7 +8343,10 @@ ${diag()}`
       table([['구분', 'kind'], ['사번', 'sabun'], ['성명', 'name'], ['도구 값', 'tool', 'num'], ['근거', 'basis', 'wrap']],
         [...RES.sample.leave.map(x => { const sk = x.sick + x.s1 + x.s2 > 0 || /병가/.test(x.sheetType); return { kind: sk ? '휴직자 일반/병가/1차/2차/무급' : '휴직자 유급일수', sabun: x.sabun, name: x.name, tool: sk ? [x.gen, x.sick, x.s1, x.s2, x.unpaidCnt].join('/') : x.paid, basis: x.status + ' · ' + x.periods.replace(/\n/g, ' | ') }; }),
          ...RES.sample.bday.map(x => ({ kind: '생일자 금액', sabun: x.sabun, name: x.name, tool: x.amount, basis: `생일 ${x.bdayDisp} · ${x.grade} · ${x.hours}시간` }))]);
-    h += `<h3>확인 필요 <span class="muted">${checks.length}건</span></h3>` + table([['구분', 'kind'], ['사번', 'sabun'], ['성명', 'name'], ['내용', 'msg', 'wrap']], checks.map(c => ({ ...c, cls: 'warn' })));
+    const tmap = B ? Object.fromEntries(B.targets.filter(t => t.orig === '확인 필요').map(t => [String(t.sabun), t])) : {};
+    h += `<h3 id="sec-checks">확인 필요 <span class="muted">${checks.length}건${Object.keys(tmap).length ? ' · 생일자는 여기서도 지급 여부를 바로 고를 수 있어요' : ''}</span></h3>` +
+      table([['구분', 'kind'], ['사번', 'sabun'], ['성명', 'name']].concat(Object.keys(tmap).length ? [['지급 여부', 'pay', 'paysel']] : []).concat([['내용', 'msg', 'wrap']]),
+        checks.map(c => { const t = c.kind === '생일자' && tmap[String(c.sabun)]; return t ? { ...c, pay: t.pay, orig: t.orig, amount: t.amount, origAmount: t.origAmount, cls: 'warn' } : { ...c, pay: '', orig: '', cls: 'warn', __nosel: 1 }; }));
     const nChk = B ? B.targets.filter(t => t.pay === '확인 필요').length : 0;
     if (B) h = `<div class="alert ${nChk ? 'warn' : ''}">기안지·${String(opt.year).slice(2)}.${String(opt.month).padStart(2, '0')} 전표_업로딩 시트가 결과 엑셀에 들어 있고, 핸드폰번호 업로드 파일은 따로 내려받아요 (둘 다 '지급' ${B.targets.filter(t => t.pay === '지급').length}명만).` + (nChk ? ` <b>'확인 필요' ${nChk}명이 남아 있어 이 사람들은 빠져 있어요.</b>` : '') + `</div>` + h;
     $('dl-phone').classList.toggle('hidden', !B); $('dl-pdf').classList.toggle('hidden', !B);
@@ -8349,6 +8356,7 @@ ${diag()}`
     $('outs').innerHTML = h;
   }
   // 결과 화면에서 '확인 필요' 생일자를 지급/제외로 정하면 엑셀(기안지·전표)과 핸드폰 파일을 다시 만듦
+  $('chips').addEventListener('click', e => { if (!e.target.closest('[data-jump]')) return; const el = $('bwarn') || $('sec-checks'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
   $('outs').addEventListener('click', async e => {
     if (e.target.id !== 'bulk-pay' || !RES || !RES.bday) return;
     const list = RES.bday.targets.filter(t => t.pay === '확인 필요' && t.orig === '확인 필요' && t.origAmount != null);
@@ -8358,7 +8366,7 @@ ${diag()}`
   });
   $('outs').addEventListener('change', async e => {
     const t = e.target, sb = t.dataset.bpay || t.dataset.bamt; if (!sb || !RES || !RES.bday) return;
-    const sel = $('outs').querySelector(`select[data-bpay="${CSS.escape(sb)}"]`), inp = $('outs').querySelector(`input[data-bamt="${CSS.escape(sb)}"]`);
+    const tr = t.closest('td') || t.parentNode, sel = tr.querySelector('select[data-bpay]'), inp = tr.querySelector('input[data-bamt]');   // 같은 칸의 선택·금액 (같은 사람이 여러 표에 나와도 바꾼 그 칸 기준)
     const pay = sel ? sel.value : '확인 필요', amt = inp ? inp.value : null;
     if (pay === '지급' && inp && !amt) { inp.focus(); inp.style.outline = '2px solid #dc2626'; return; }   // 금액을 모르면 지급으로 바꿀 수 없음
     HR.decideBday(RES.bday, sb, pay, amt);
